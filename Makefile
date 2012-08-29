@@ -14,7 +14,7 @@ basics:
 	echo "SELINUX=disabled" | sudo tee /etc/sysconfig/selinux # desligar SELinux para sempre
 
 	# Ambiente de execução
-	echo "export RAILS_ENV=$RAILS_ENV" | sudo tee /etc/profile.d/rails.sh
+	echo "export RAILS_ENV=${RAILS_ENV}" | sudo tee /etc/profile.d/rails.sh
 
 	# Usuário “deploy”
 	sudo adduser -g apache -G users,wheel -u 700 deploy
@@ -50,7 +50,7 @@ passenger: ruby_193
 	gem install passenger --no-rdoc --no-ri
 	passenger-install-apache2-module --auto
 	passenger-install-apache2-module --snippet | sudo tee /etc/httpd/conf.d/00passenger.conf
-	echo "RailsEnv $RAILS_ENV" | sudo tee /etc/httpd/conf.d/00rails_env.conf
+	echo "RailsEnv ${RAILS_ENV}" | sudo tee /etc/httpd/conf.d/00rails_env.conf
 
 	# Configurando o início automático do Apache
 	sudo chkconfig httpd on
@@ -73,7 +73,7 @@ sendmail:
 .PHONY: oracle
 oracle:
 	# Download e instalação dos pacotes (Oracle não fornece download direto, por isso está no S3)
-	mkdir -p $HOME/oracleclient && cd $_
+	mkdir -p ${HOME}/oracleclient && cd $_
 	curl 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm' -O
 	sudo yum install -y oracle-instantclient*
 	
@@ -92,7 +92,7 @@ oracle:
 .PHONY: logrotate
 logrotate:
 	cat | sudo tee /etc/logrotate.d/rails <<-END
-	/app/*/shared/log/$RAILS_ENV.log {
+	/app/*/shared/log/${RAILS_ENV}.log {
 	    daily
 	    maxage 10
 	    extension .log
@@ -119,7 +119,7 @@ nodejs: basics
 	sudo yum install -y gcc-c++ openssl-devel ncurses-devel
 
 	# Download
-	cd $HOME && git clone https://github.com/joyent/node.git
+	cd ${HOME} && git clone https://github.com/joyent/node.git
 	cd node && git checkout v0.8.8 # conferir última versão em http://nodejs.org/
 
 	# Compilação e Instalação
@@ -147,7 +147,7 @@ elasticsearch: basics
 	ln -s shared/log current/logs
 	
 	# Configuração
-	echo "cluster.name: elasticsearch-portal20-$RAILS_ENV-new" | tee /app/elasticsearch/current/config/elasticsearch.yml
+	echo "cluster.name: elasticsearch-portal20-${RAILS_ENV}-new" | tee /app/elasticsearch/current/config/elasticsearch.yml
 
 .PHONY: nfemais
 nfemais: ruby_193 passenger beanstalkd oracle logrotate
