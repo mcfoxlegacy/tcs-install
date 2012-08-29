@@ -4,8 +4,13 @@
 #   make portal20   instala Portal 2.0
 #   make nfemais    instala NFe+
 
-# Substituir pelo nome correto do ambiente: "production", "staging", "demo", etc
+ifneq (,$(findstring amzn,$(shell uname -r)))
+export AMAZON=1
 export RAILS_ENV=amazon_demo
+else
+export AMAZON=0
+export RAILS_ENV=local_install
+endif
 
 .PHONY: basics
 basics:
@@ -16,10 +21,11 @@ basics:
 	# Ambiente de execução
 	echo "export RAILS_ENV=${RAILS_ENV}" | sudo tee /etc/profile.d/rails.sh
 
+ifneq ($(AMAZON),1)
 	# Repositório EPEL (Extra Packages for Enterprise Linux), necessário para RHEL e CentOS:
 	# Consultar http://fedoraproject.org/wiki/EPEL para informações atualizadas
-	# TODO: detectar se é possível apenas ativar o EPEL (é o caso das AMI da Amazon)
 	sudo yum install -y http://epel.gtdinternet.com/6/i386/epel-release-6-7.noarch.rpm
+endif
 
 	# Instalar pacotes básicos
 	sudo yum -y install git mutt httpd
