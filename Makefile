@@ -16,15 +16,15 @@ basics:
 	# Ambiente de execução
 	echo "export RAILS_ENV=${RAILS_ENV}" | sudo tee /etc/profile.d/rails.sh
 
-	# Usuário “deploy”
-	sudo adduser -g apache -G users,wheel -u 700 deploy
-
 	# Repositório EPEL (Extra Packages for Enterprise Linux), necessário para RHEL e CentOS:
 	# Consultar http://fedoraproject.org/wiki/EPEL para informações atualizadas
 	sudo yum install -y http://epel.gtdinternet.com/6/i386/epel-release-6-7.noarch.rpm
 
 	# Instalar pacotes básicos
-	sudo yum -y install git mutt
+	sudo yum -y install git mutt httpd
+
+	# Usuário “deploy”
+	sudo adduser -g apache -G users,wheel -u 700 deploy
 
 .PHONY: rvm
 rvm: basics
