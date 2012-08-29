@@ -18,6 +18,7 @@ basics:
 
 	# Repositório EPEL (Extra Packages for Enterprise Linux), necessário para RHEL e CentOS:
 	# Consultar http://fedoraproject.org/wiki/EPEL para informações atualizadas
+	# TODO: detectar se é possível apenas ativar o EPEL (é o caso das AMI da Amazon)
 	sudo yum install -y http://epel.gtdinternet.com/6/i386/epel-release-6-7.noarch.rpm
 
 	# Instalar pacotes básicos
@@ -177,7 +178,7 @@ nfemais: ruby_193 passenger beanstalkd oracle logrotate
 	END
 
 .PHONY: portal20
-nfemais: ruby_193 passenger beanstalkd oracle logrotate
+portal20: ruby_193 passenger beanstalkd oracle logrotate
 	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
 	mkdir -p /app/portal20/{releases,shared}
 	mkdir -p /app/portal20/shared/{assets,bundle,cached-copy,pids,system,log}
