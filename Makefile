@@ -24,14 +24,14 @@ basics:
 ifneq ($(AMAZON),1)
 	# Repositório EPEL (Extra Packages for Enterprise Linux), necessário para RHEL e CentOS:
 	# Consultar http://fedoraproject.org/wiki/EPEL para informações atualizadas
-	sudo yum install -y http://epel.gtdinternet.com/6/i386/epel-release-6-7.noarch.rpm
+	sudo yum install -q -y http://epel.gtdinternet.com/6/i386/epel-release-6-7.noarch.rpm
 endif
 
 	# Instalar pacotes básicos
-	sudo yum -y install git mutt httpd
+	sudo yum install -q -y git mutt httpd
 
 	# Usuário “deploy”
-	sudo adduser -g apache -G users,wheel -u 700 deploy
+    sudo adduser -g apache -G users,wheel -u 700 deploy ; e=$$?; if [ $$e -ne 9 ]; then exit $$e; fi
 
 .PHONY: rvm
 rvm: basics
@@ -42,14 +42,13 @@ rvm: basics
 .PHONY: ruby_193
 ruby_193: rvm
 	# Pacotes para Ruby 1.9.3
-	sudo yum install -y gcc-c++ patch readline readline-devel zlib zlib-devel libyaml-devel \
-	                    libffi-devel openssl-devel make bzip2 autoconf automake libtool bison \
-	                    iconv-devel httpd httpd-devel apr-devel apr-util-devel curl-devel \
-	                    libxml2-devel libxslt-devel
+	sudo yum install -q -y gcc-c++ patch readline readline-devel zlib zlib-devel libyaml-devel \
+	                       libffi-devel openssl-devel make bzip2 autoconf automake libtool bison \
+	                       iconv-devel httpd httpd-devel apr-devel apr-util-devel curl-devel \
+	                       libxml2-devel libxslt-devel
 	
 	# Instalação do Ruby 1.9.3
-	rvm install 1.9.3
-	rvm use --default 1.9.3
+	sudo su - deploy -c 'rvm use --default --install 1.9.3'
 
 .PHONY: passenger
 passenger: ruby_193
@@ -64,17 +63,17 @@ passenger: ruby_193
 
 .PHONY: beanstalkd
 beanstalkd:
-	sudo yum install -y beanstalkd --enablerepo=epel
+	sudo yum install -q -y beanstalkd --enablerepo=epel
 	sudo chkconfig beanstalkd on
 
 .PHONY: sendmail
 sendmail:
-	sudo yum install -y sendmail
+	sudo yum install -q -y sendmail
 	sudo chkconfig sendmail on
 
 .PHONY: memcached
 sendmail:
-	sudo yum install -y memcached
+	sudo yum install -q -y memcached
 	sudo chkconfig memcached on
 
 .PHONY: oracle
@@ -82,7 +81,7 @@ oracle:
 	# Download e instalação dos pacotes (Oracle não fornece download direto, por isso está no S3)
 	mkdir -p ${HOME}/oracleclient && cd $_
 	curl 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm' -O
-	sudo yum install -y oracle-instantclient*
+	sudo yum install -q -y oracle-instantclient*
 	
 	# Configurar o LD
 	echo /usr/lib/oracle/11.2/client64/lib | sudo tee /etc/ld.so.conf.d/oracle.conf
@@ -114,16 +113,15 @@ logrotate:
 .PHONY: jruby
 jruby: rvm
 	# Preparação
-	sudo yum install -y java
+	sudo yum install -q -y java
 	
 	# Instalação do JRuby
-	rvm install jruby
-	rvm use --default jruby
+	sudo su - deploy -c 'rvm use --install jruby'
 
 .PHONY: nodejs
 nodejs: basics
 	# Preparação
-	sudo yum install -y gcc-c++ openssl-devel ncurses-devel
+	sudo yum install -q -y gcc-c++ openssl-devel ncurses-devel
 
 	# Download
 	cd ${HOME} && git clone https://github.com/joyent/node.git
