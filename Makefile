@@ -64,7 +64,7 @@ passenger: ruby_193
 
 .PHONY: beanstalkd
 beanstalkd:
-	sudo yum install -y beanstalkd
+	sudo yum install -y beanstalkd --enablerepo=epel
 	sudo chkconfig beanstalkd on
 
 .PHONY: sendmail
