@@ -52,10 +52,11 @@ ruby_193: rvm
 
 .PHONY: passenger
 passenger: ruby_193
-	# Instalação do Passenger e Configuração do Apache
-	gem install passenger --no-rdoc --no-ri
-	passenger-install-apache2-module --auto
-	passenger-install-apache2-module --snippet | sudo tee /etc/httpd/conf.d/00passenger.conf
+	# Instalação do Passenger
+	sudo su - deploy -c 'gem install passenger --no-rdoc --no-ri'
+	sudo su - deploy -c 'passenger-install-apache2-module --auto'
+	# Configuração do Apache
+	sudo su - deploy -c 'passenger-install-apache2-module --snippet' | sudo tee /etc/httpd/conf.d/00passenger.conf
 	echo "RailsEnv ${RAILS_ENV}" | sudo tee /etc/httpd/conf.d/00rails_env.conf
 
 	# Configurando o início automático do Apache
