@@ -84,8 +84,8 @@ sendmail:
 .PHONY: oracle
 oracle:
 	# Download e instalação dos pacotes (Oracle não fornece download direto, por isso está no S3)
-	mkdir -p ${HOME}/oracleclient && cd $_
-	curl 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm' -O
+	mkdir -p ${HOME}/oracleclient; cd $_
+	curl -O 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm'
 	sudo yum install -q -y oracle-instantclient*
 	
 	# Configurar o LD
