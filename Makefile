@@ -33,8 +33,9 @@ endif
 	# Instalar pacotes básicos
 	sudo yum install -q -y git mutt httpd
 
-	# Usuário “deploy”
-    sudo adduser -g apache -G users,wheel -u 700 deploy ; e=$$?; if [ $$e -ne 9 ]; then exit $$e; fi
+	# Cria usuário “deploy”, se não existir
+	sudo adduser -g apache -G users,wheel -u 700 deploy ; \
+		e=$$?; if [ $$e -ne 9 -a $$e -ne 0 ]; then exit $$e; fi
 
 .PHONY: rvm
 rvm: basics
