@@ -12,6 +12,9 @@ export AMAZON=0
 export RAILS_ENV=local_install
 endif
 
+.PHONY: all
+all: portal20 sped_webservices nfemais
+
 .PHONY: basics
 basics:
 	# Desligar SELinux
