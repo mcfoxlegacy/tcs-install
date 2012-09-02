@@ -90,7 +90,7 @@ sendmail:
 	sudo chkconfig sendmail on
 
 .PHONY: memcached
-sendmail:
+memcached:
 	sudo yum install -q -y memcached
 	sudo chkconfig memcached on
 
