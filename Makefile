@@ -12,6 +12,19 @@ export AMAZON=0
 export RAILS_ENV=local_install
 endif
 
+define LOGROTATE_BODY
+	/app/*/shared/log/${RAILS_ENV}.log {
+	    daily
+	    maxage 10
+	    extension .log
+	    dateformat -%Y-%m-%d
+	    missingok
+	    notifempty
+	    delaycompress
+	    copytruncate
+	}
+endef
+
 .PHONY: all
 all: portal20 sped_webservices nfemais
 
@@ -84,9 +97,10 @@ sendmail:
 .PHONY: oracle
 oracle:
 	# Download e instalação dos pacotes (Oracle não fornece download direto, por isso está no S3)
-	mkdir -p ${HOME}/oracleclient; cd $_
-	curl -O 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm'
-	sudo yum install -q -y oracle-instantclient*
+	mkdir -p ${HOME}/oracleclient; \
+		cd ${HOME}/oracleclient; \
+		curl -O 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm' \
+		sudo yum install -q -y oracle-instantclient*
 	
 	# Configurar o LD
 	echo /usr/lib/oracle/11.2/client64/lib | sudo tee /etc/ld.so.conf.d/oracle.conf
@@ -98,22 +112,10 @@ oracle:
 
 	# Permitir que o Apache leia as variáveis de ambiente
 	echo ". /etc/profile.d/oracle.sh" | sudo tee -a /etc/sysconfig/httpd
-	sudo service httpd restart
 			
 .PHONY: logrotate
 logrotate:
-	cat | sudo tee /etc/logrotate.d/rails <<-END
-	/app/*/shared/log/${RAILS_ENV}.log {
-	    daily
-	    maxage 10
-	    extension .log
-	    dateformat -%Y-%m-%d
-	    missingok
-	    notifempty
-	    delaycompress
-	    copytruncate
-	}
-	END
+	echo '$(LOGROTATE_BODY)' | sudo tee /etc/logrotate.d/rails
 
 .PHONY: jruby
 jruby: rvm
