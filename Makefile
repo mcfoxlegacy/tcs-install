@@ -12,6 +12,22 @@ export AMAZON=0
 export RAILS_ENV=local_install
 endif
 
+define apache_vhost_config
+<VirtualHost *:80>\n\tRackBaseURI $(app_base_uri)\n\t<Directory /var/www/html$(app_base_uri)>\n\t\tOptions -MultiViews\n\t</Directory>\n</VirtualHost>
+endef
+
+define configure_ruby_app
+	mkdir -p $(app_dir)/{releases,shared}
+	mkdir -p $(app_dir)/shared/{assets,bundle,cached-copy,pids,system,log}
+	git clone $(git_repos) $(app_dir)/shared/cached-copy
+	cp -pr $(app_dir)/shared/cached-copy $(app_dir)/releases/capless
+	ln -s $(app_dir)/releases/capless $(app_dir)/current
+	ln -s $(app_dir)/shared/log $(app_dir)/current/
+	sudo ln -s $(app_dir)/current /var/www/html$(app_base_uri)
+	
+	echo -e $(apache_vhost_config) | sudo tee /etc/httpd/conf.d$(app_base_uri).conf
+endef
+
 .PHONY: all
 all: portal20 sped_webservices nfemais
 
@@ -150,91 +166,55 @@ elasticsearch: basics
 
 .PHONY: nfemais
 nfemais: ruby_193 passenger beanstalkd oracle logrotate
-	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	mkdir -p /app/nfe_mais/{releases,shared}
-	mkdir -p /app/nfe_mais/shared/{assets,bundle,cached-copy,pids,system,log}
-	git clone git@github.com:elementar/nfe_mais.git /app/nfe_mais/shared/cached-copy
-	cp -pr /app/nfe_mais/shared/cached-copy /app/nfe_mais/releases/capless
-	ln -s /app/nfe_mais/releases/capless /app/nfe_mais/current
-	ln -s /app/nfe_mais/shared/log /app/nfe_mais/current/
+	app_dir = /app/nfe_mais
+	app_base_uri = /nfemais
+	git_repos = git@github.com:elementar/nfe_mais.git
 	
-	# Configura o Apache
-	sudo ln -s /app/nfe_mais/current /var/www/html/nfemais
-	cat | sudo tee /etc/httpd/conf.d/nfe_mais.conf <<-END
-	<VirtualHost *:80>
-	  RackBaseURI /nfemais
-	  <Directory /var/www/html/nfemais>
-	    Options -MultiViews
-	  </Directory>
-	</VirtualHost>
-	END
+	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
+	$(configure_ruby_app)
 	
 	# Configura o CRON
-	crontab <<-END
-	`crontab -l`
-	0 5,13,17 * * * /bin/bash -l -c 'cd /app/nfe_mais/current && bundle exec rake documentos:reconsulta'
-	END
+	echo -e "`crontab -l`\n0 5,13,17 * * * /bin/bash -l -c 'cd /app/nfe_mais/current && bundle exec rake documentos:reconsulta'" | crontab
 
 .PHONY: portal20
 portal20: ruby_193 passenger beanstalkd oracle logrotate
-	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	mkdir -p /app/portal20/{releases,shared}
-	mkdir -p /app/portal20/shared/{assets,bundle,cached-copy,pids,system,log}
-	git clone git@github.com:ccde-dev/ccde-portal-20.git /app/portal20/shared/cached-copy
-	cp -pr /app/portal20/shared/cached-copy /app/portal20/releases/capless
-	ln -s /app/portal20/releases/capless /app/portal20/current
-	ln -s /app/portal20/shared/log /app/portal20/current/
+	app_dir = /app/portal20
+	app_base_uri = /custodia
+	git_repos = git@github.com:taxweb/ccde-portal-20.git
 	
-	# Configura o Apache
-	sudo ln -s /app/portal20/current /var/www/html/custodia
-	cat | sudo tee /etc/httpd/conf.d/portal20.conf <<-END
-	<VirtualHost *:80>
-	  RackBaseURI /custodia
-	  <Directory /var/www/html/custodia>
-	    Options -MultiViews
-	  </Directory>
-	</VirtualHost>
-	END
+	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
+	$(configure_ruby_app)
 	
 	# Configura o CRON
-	crontab <<-END
-	`crontab -l`
-	*/15 * * * * /bin/bash -l -c 'cd /app/portal20/current && time bundle exec rake ccde:documentos:indexa SLICE=1 --trace'
-	END
+	echo -e "`crontab -l`\n*/15 * * * * /bin/bash -l -c 'cd /app/portal20/current && time bundle exec rake ccde:documentos:indexa SLICE=1 --trace'" | crontab
 
 .PHONY: sped_webservices
 sped_webservices: ruby_193 jruby nodejs logrotate
+	app_dir = /app/sped_webservices
+	app_base_uri = /spedws
+	git_repos = git@github.com:elementar/sped_webservices.git
+	
 	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	mkdir -p /app/sped_webservices/{releases,shared}
-	mkdir -p /app/sped_webservices/shared/{assets,bundle,cached-copy,pids,system,log}
-	git clone git@github.com:ccde-dev/ccde-portal-20.git /app/sped_webservices/shared/cached-copy
-	cp -pr /app/sped_webservices/shared/cached-copy /app/sped_webservices/releases/capless
-	ln -s /app/sped_webservices/releases/capless /app/sped_webservices/current
-	ln -s /app/sped_webservices/shared/log /app/sped_webservices/current/
+	$(configure_ruby_app)
 	
 	# Instala as gemas necessárias
-	cd /app/sped_webservices/current
-	rvm-shell jruby -c 'bundle install --deployment --quiet --path /app/sped_webservices/shared/bundle --without development test'
+	cd $(app_dir)/current
+	rvm-shell jruby -c 'bundle install --deployment --quiet --path $(app_dir)/shared/bundle --without development test'
 
-	# Instalação do sped-node
-	mkdir -p /app/sped-node/{releases,shared}
-	mkdir -p /app/sped_webservices/shared/{cached-copy,log}
-	git clone git@github.com:ccde-dev/ccde-portal-20.git /app/sped_webservices/shared/cached-copy
-	cp -pr /app/sped_webservices/shared/cached-copy /app/sped_webservices/releases/capless
-	ln -s /app/sped_webservices/releases/capless /app/sped_webservices/current
+	# Instala sped-node
+	app_dir = /app/sped-node
+	app_base_uri = /spednode
+	git_repos = git@github.com:elementar/sped-node.git
+
+	$(configure_ruby_app)
 	
-	git clone git@github.com:ccde-dev/sped-node.git /app/sped-node
-	cd /app/sped-node
-	mkdir -p /app/sped-node/shared/log
-	ln -s /app/log/sped-node log
+	# Instala pacotes do node
+	cd $(app_dir)/current
 	npm install
 	
 	# Configuração do CRON para limpeza dos logs, todos os dias à meia-noite
-	crontab <<-END
-	`crontab -l`
-	0 0 * * * /bin/bash -l -c 'ls /app/sped_webservices/shared/log/kirk-*.log -r | tail -n +11 | xargs rm -v'
-	0 0 * * * /bin/bash -l -c 'ls /app/sped-node/shared/log/sped-node-*.log -r | tail -n +11 | xargs rm -v'
-	END
+	echo -e "`crontab -l`\n0 0 * * * /bin/bash -l -c 'ls /app/sped_webservices/shared/log/kirk-*.log -r | tail -n +11 | xargs rm -v'" | crontab
+	echo -e "`crontab -l`\n0 0 * * * /bin/bash -l -c 'ls /app/sped-node/shared/log/sped-node-*.log -r | tail -n +11 | xargs rm -v'" | crontab
 
 .PHONY: start
 start:
