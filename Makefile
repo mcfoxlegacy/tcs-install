@@ -4,6 +4,9 @@
 #   make portal20   instala Portal 2.0
 #   make nfemais    instala NFe+
 
+# verificar última versão em: http://www.elasticsearch.org/download/
+elasticsearch_version = 0.19.9
+
 ifneq (,$(findstring amzn,$(shell uname -r)))
 export AMAZON=1
 export RAILS_ENV=amazon_demo
@@ -17,15 +20,14 @@ define apache_vhost_config
 endef
 
 define configure_ruby_app
-	mkdir -p $(app_dir)/{releases,shared}
-	mkdir -p $(app_dir)/shared/{assets,bundle,cached-copy,pids,system,log}
-	git clone $(git_repos) $(app_dir)/shared/cached-copy
-	cp -pr $(app_dir)/shared/cached-copy $(app_dir)/releases/capless
-	ln -s $(app_dir)/releases/capless $(app_dir)/current
-	ln -s $(app_dir)/shared/log $(app_dir)/current/
-	sudo ln -s $(app_dir)/current /var/www/html$(app_base_uri)
-	
-	echo -e $(apache_vhost_config) | sudo tee /etc/httpd/conf.d$(app_base_uri).conf
+	mkdir -p $(1)/{releases,shared}
+	mkdir -p $(1)/shared/{assets,bundle,cached-copy,pids,system,log}
+	git clone $(3) $(1)/shared/cached-copy
+	cp -pr $(1)/shared/cached-copy $(1)/releases/capless
+	ln -s $(1)/releases/capless $(1)/current
+	ln -s $(1)/shared/log $(1)/current/
+	sudo ln -s $(1)/current /var/www/html$(2)
+	echo -e '$(apache_vhost_config)' | sudo tee /etc/httpd/conf.d$(2).conf
 endef
 
 .PHONY: all
@@ -151,13 +153,13 @@ elasticsearch: basics
 	# Criação da estrutura básica
 	mkdir -p /app/elasticsearch/versions /app/elasticsearch/shared/{data,log} /app/logs/elasticsearch
 	
-	# Instalação - verificar última versão em: http://www.elasticsearch.org/download/
+	# Instalação
 	cd /app/elasticsearch/versions
-	curl -O https://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-0.19.9.tar.gz
-	tar xvzf elasticsearch-0.19.9.tar.gz
-	ln -s /app/elasticsearch/shared/{data,logs} elasticseach-0.19.9/
+	curl -O https://github.com/downloads/elasticsearch/elasticsearch/elasticsearch-$(elasticsearch_version).tar.gz
+	tar xvzf elasticsearch-$(elasticsearch_version).tar.gz
+	ln -s /app/elasticsearch/shared/{data,logs} elasticseach-$(elasticsearch_version)/
 	cd /app/elasticsearch
-	ln -s versions/elasticsearch-0.19.9 current
+	ln -s versions/elasticsearch-$(elasticsearch_version) current
 	ln -s shared/data current/data
 	ln -s shared/log current/logs
 	
@@ -166,51 +168,28 @@ elasticsearch: basics
 
 .PHONY: nfemais
 nfemais: ruby_193 passenger beanstalkd oracle logrotate
-	app_dir = /app/nfe_mais
-	app_base_uri = /nfemais
-	git_repos = git@github.com:elementar/nfe_mais.git
-	
-	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	$(configure_ruby_app)
+	$(call configure_ruby_app,/app/nfe_mais,/nfemais,git@github.com:elementar/nfe_mais.git)
 	
 	# Configura o CRON
 	echo -e "`crontab -l`\n0 5,13,17 * * * /bin/bash -l -c 'cd /app/nfe_mais/current && bundle exec rake documentos:reconsulta'" | crontab
 
 .PHONY: portal20
 portal20: ruby_193 passenger beanstalkd oracle logrotate
-	app_dir = /app/portal20
-	app_base_uri = /custodia
-	git_repos = git@github.com:taxweb/ccde-portal-20.git
-	
-	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	$(configure_ruby_app)
+	$(call configure_ruby_app,/app/portal20,/custodia,git@github.com:taxweb/ccde-portal-20.git)
 	
 	# Configura o CRON
 	echo -e "`crontab -l`\n*/15 * * * * /bin/bash -l -c 'cd /app/portal20/current && time bundle exec rake ccde:documentos:indexa SLICE=1 --trace'" | crontab
 
 .PHONY: sped_webservices
 sped_webservices: ruby_193 jruby nodejs logrotate
-	app_dir = /app/sped_webservices
-	app_base_uri = /spedws
-	git_repos = git@github.com:elementar/sped_webservices.git
-	
-	# Cria uma árvore compatível com a do Capistrano, para evitar surpresas
-	$(configure_ruby_app)
+	$(call configure_ruby_app,/app/sped_webservices,/spedws,git@github.com:elementar/sped_webservices.git)
+	$(call configure_ruby_app,/app/sped-node,/spednode,git@github.com:elementar/sped-node.git)
 	
 	# Instala as gemas necessárias
-	cd $(app_dir)/current
-	rvm-shell jruby -c 'bundle install --deployment --quiet --path $(app_dir)/shared/bundle --without development test'
+	cd /app/sped_webservices/current && rvm-shell jruby -c 'bundle install --deployment --quiet --path /app/sped_webservices/shared/bundle --without development test'
 
-	# Instala sped-node
-	app_dir = /app/sped-node
-	app_base_uri = /spednode
-	git_repos = git@github.com:elementar/sped-node.git
-
-	$(configure_ruby_app)
-	
 	# Instala pacotes do node
-	cd $(app_dir)/current
-	npm install
+	cd /app/sped-node/current && npm install
 	
 	# Configuração do CRON para limpeza dos logs, todos os dias à meia-noite
 	echo -e "`crontab -l`\n0 0 * * * /bin/bash -l -c 'ls /app/sped_webservices/shared/log/kirk-*.log -r | tail -n +11 | xargs rm -v'" | crontab
