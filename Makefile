@@ -20,12 +20,11 @@ define apache_vhost_config
 endef
 
 define configure_ruby_app
-	mkdir -p $(1)/{releases,shared}
-	mkdir -p $(1)/shared/{assets,bundle,cached-copy,pids,system,log}
-	git clone $(3) $(1)/shared/cached-copy
-	cp -pr $(1)/shared/cached-copy $(1)/releases/capless
-	ln -s $(1)/releases/capless $(1)/current
-	ln -s $(1)/shared/log $(1)/current/
+	sudo su - deploy -c 'mkdir -p $(1)/{releases,shared} $(1)/shared/{assets,bundle,cached-copy,pids,system,log}'
+	sudo su - deploy -c 'git clone $(3) $(1)/shared/cached-copy'
+	sudo su - deploy -c 'cp -pr $(1)/shared/cached-copy $(1)/releases/capless'
+	sudo su - deploy -c 'ln -s $(1)/releases/capless $(1)/current'
+	sudo su - deploy -c 'ln -s $(1)/shared/log $(1)/current/'
 	sudo ln -s $(1)/current /var/www/html$(2)
 	echo -e '$(apache_vhost_config)' | sudo tee /etc/httpd/conf.d$(2).conf
 endef
@@ -54,6 +53,9 @@ endif
 	# Cria usuário “deploy”, se não existir
 	sudo adduser -g apache -G users,wheel -u 700 deploy ; \
 		e=$$?; if [ $$e -ne 9 -a $$e -ne 0 ]; then exit $$e; fi
+	
+	# Passa a propriedade do diretório /app para o usuário deploy
+	sudo chown deploy:apache /app && sudo chmod 775 /app
 
 .PHONY: rvm
 rvm: basics
