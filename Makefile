@@ -12,19 +12,6 @@ export AMAZON=0
 export RAILS_ENV=local_install
 endif
 
-define LOGROTATE_BODY
-	/app/*/shared/log/${RAILS_ENV}.log {
-	    daily
-	    maxage 10
-	    extension .log
-	    dateformat -%Y-%m-%d
-	    missingok
-	    notifempty
-	    delaycompress
-	    copytruncate
-	}
-endef
-
 .PHONY: all
 all: portal20 sped_webservices nfemais
 
@@ -115,7 +102,7 @@ oracle:
 			
 .PHONY: logrotate
 logrotate:
-	echo '$(LOGROTATE_BODY)' | sudo tee /etc/logrotate.d/rails
+	echo -e '/app/*/shared/log/${RAILS_ENV}.log {\n\tdaily\n\tmaxage 10\n\textension .log\n\tdateformat -%Y-%m-%d\n\tmissingok\n\tnotifempty\n\tdelaycompress\n\tcopytruncate\n}' | sudo tee /etc/logrotate.d/rails
 
 .PHONY: jruby
 jruby: rvm
