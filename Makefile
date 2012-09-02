@@ -54,8 +54,8 @@ endif
 	sudo adduser -g apache -G users,wheel -u 700 deploy ; \
 		e=$$?; if [ $$e -ne 9 -a $$e -ne 0 ]; then exit $$e; fi
 	
-	# Passa a propriedade do diretório /app para o usuário deploy
-	mkdir -p /app && sudo chown deploy:apache /app && sudo chmod 775 /app
+	# Cria diretório /app e passa propriedade para o usuário deploy
+	sudo su -c 'mkdir -p /app && chown deploy:apache /app && chmod 775 /app'
 
 .PHONY: rvm
 rvm: basics
