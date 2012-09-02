@@ -103,7 +103,7 @@ oracle:
 	mkdir -p ${HOME}/oracleclient; \
 		cd ${HOME}/oracleclient; \
 		curl -O 'https://s3.amazonaws.com/ccde-install/oracle-instantclient11.2-{basic,devel,sqlplus}-11.2.0.3.0-1.x86_64.rpm'; \
-		sudo yum install -q -y oracle-instantclient*
+		sudo yum install -q -y oracle-instantclient* || true
 	
 	# Configurar o LD
 	echo /usr/lib/oracle/11.2/client64/lib | sudo tee /etc/ld.so.conf.d/oracle.conf
