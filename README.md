@@ -6,13 +6,13 @@ An installer for the Total Compliance Suite.
 
 To install all projects, use:
 
-    make all
+    curl -s https://raw.github.com/taxweb/tcs-install/master/tcs-install.sh | bash
 
 To install a single project, use any of those:
 
-    make portal20
-	make nfemais
-	make elasticsearch
+    curl -s https://raw.github.com/taxweb/tcs-install/master/tcs-install.sh | bash -s portal20
+	curl -s https://raw.github.com/taxweb/tcs-install/master/tcs-install.sh | bash -s nfemais
+	curl -s https://raw.github.com/taxweb/tcs-install/master/tcs-install.sh | bash -s elasticsearch
 	...
 
 Make sure you edit the configuration files after installing.
