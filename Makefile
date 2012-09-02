@@ -55,7 +55,7 @@ endif
 		e=$$?; if [ $$e -ne 9 -a $$e -ne 0 ]; then exit $$e; fi
 	
 	# Passa a propriedade do diretório /app para o usuário deploy
-	sudo chown deploy:apache /app && sudo chmod 775 /app
+	mkdir -p /app && sudo chown deploy:apache /app && sudo chmod 775 /app
 
 .PHONY: rvm
 rvm: basics
